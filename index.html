@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bakery Batch Calculator</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect fill='%239a3412' width='16' height='16' rx='3'/%3E%3Cpath fill='%23fff7ed' d='M2.5 11.2c.2-3.4 2.6-6 5.5-6s5.3 2.6 5.5 6c-1.6.7-3.5 1-5.5 1s-3.9-.3-5.5-1z'/%3E%3C/svg%3E">
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('bakery-theme');
+        var theme = saved === 'dark' || saved === 'light'
+          ? saved
+          : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (err) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #efe2cf;
+      --bg-deep: #e7d3b8;
+      --paper: #fffaf3;
+      --ink: #2a2118;
+      --muted: #5e5146;
+      --line: #e3d2bb;
+      --accent: #9a3412;
+      --accent-ink: #fff8f3;
+      --field: #fffdf9;
+      --stat: #f6ecdf;
+      --danger: #8c2f24;
+      --danger-bg: #f8e4dc;
+      --shadow: 0 18px 40px rgba(90, 48, 18, 0.08);
+      --serif: "Iowan Old Style", Palatino, "Palatino Linotype", "Liberation Serif", Georgia, serif;
+      --sans: Cantarell, "Avenir Next", "Segoe UI", sans-serif;
+      --mono: "JetBrains Mono", "Liberation Mono", ui-monospace, monospace;
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #14110e;
+      --bg-deep: #1c1713;
+      --paper: #241e19;
+      --ink: #f6efe6;
+      --muted: #cbbba8;
+      --line: #3d342c;
+      --accent: #f0b27a;
+      --accent-ink: #2a160c;
+      --field: #1b1612;
+      --stat: #2c241e;
+      --danger: #f0b4a8;
+      --danger-bg: #3a2420;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at top left, rgba(196, 112, 58, 0.18), transparent 46%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 1rem;
+      line-height: 1.45;
+    }
+
+    ::selection {
+      background: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    .wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 1.5rem 1.15rem 3rem;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      gap: 0.85rem;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 3.1rem;
+      height: 3.1rem;
+      flex: 0 0 auto;
+      color: var(--accent);
+      background: var(--paper);
+      border-radius: 1rem;
+      border: 1px solid var(--line);
+      padding: 0.35rem;
+    }
+
+    .eyebrow {
+      margin: 0 0 0.15rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: clamp(1.9rem, 4vw, 3.15rem);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 0.95;
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .lede {
+      max-width: 42rem;
+      margin: 1rem 0 1.25rem;
+      color: var(--muted);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 1.15rem 1.15rem 1.25rem;
+      min-width: 0;
+    }
+
+    .formula { border-top: 4px solid var(--accent); }
+
+    h2 {
+      margin: 0 0 0.35rem;
+      font-family: var(--serif);
+      font-size: 1.55rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .hint {
+      margin: 0 0 1rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .yield-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem 0.55rem;
+      margin: 0 0 1rem;
+      font-family: var(--serif);
+      font-size: 1.22rem;
+    }
+
+    .yield-line input {
+      width: 5.4rem;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 1rem;
+    }
+
+    .scale-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 3.2rem;
+      padding: 0.12rem 0.55rem;
+      border: 1.5px dashed var(--accent);
+      border-radius: 999px;
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 0.92rem;
+    }
+
+    .row-head,
+    .ingredient-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.75fr) minmax(4.2rem, 0.55fr) minmax(0, 0.9fr) auto;
+      gap: 0.45rem 0.5rem;
+      align-items: end;
+    }
+
+    .row-head {
+      margin-bottom: 0.35rem;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .ingredient-row { margin-bottom: 0.55rem; }
+
+    .field {
+      position: relative;
+      display: block;
+      min-width: 0;
+    }
+
+    .field-label {
+      display: block;
+      margin-bottom: 0.25rem;
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    input {
+      width: 100%;
+      font: inherit;
+      color: inherit;
+      background: var(--field);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.55rem 0.65rem;
+    }
+
+    input[aria-invalid="true"] { border-color: var(--danger); }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 0.55rem 0.95rem;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      color: var(--ink);
+    }
+
+    button.primary {
+      background: var(--accent);
+      border-color: transparent;
+      color: var(--accent-ink);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .remove-row {
+      background: transparent;
+      padding: 0.5rem 0.7rem;
+    }
+
+    .row-error {
+      grid-column: 1 / -1;
+      margin: 0;
+      color: var(--danger);
+      font-size: 0.82rem;
+    }
+
+    .row-actions { margin-top: 0.35rem; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+      margin: 0.8rem 0 1rem;
+    }
+
+    .stat {
+      background: var(--stat);
+      border-radius: 12px;
+      padding: 0.7rem 0.75rem;
+      min-width: 0;
+    }
+
+    .stat .label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 0.2rem;
+      font-family: var(--mono);
+      font-size: 1.02rem;
+      font-weight: 550;
+      overflow-wrap: anywhere;
+    }
+
+    .stat small {
+      display: block;
+      margin-top: 0.15rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    caption.sr-only,
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    th, td {
+      padding: 0.55rem 0.35rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+      text-align: left;
+      overflow-wrap: anywhere;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .num { text-align: right; font-family: var(--mono); }
+
+    .pct-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.25rem;
+    }
+
+    .bar {
+      width: 4.5rem;
+      max-width: 100%;
+      height: 4px;
+      background: var(--line);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .bar > span {
+      display: block;
+      height: 100%;
+      background: var(--accent);
+    }
+
+    .message {
+      margin: 0 0 0.8rem;
+      padding: 0.7rem 0.8rem;
+      border-radius: 10px;
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .notes {
+      margin: 0.75rem 0 0;
+      padding-left: 1.1rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .footnote {
+      margin: 0.9rem 0 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    #copy-status {
+      min-height: 1.2em;
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .noscript {
+      margin: 1rem;
+      padding: 0.8rem 1rem;
+      background: var(--paper);
+      border-radius: 12px;
+    }
+
+    @media (min-width: 821px) {
+      .field-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+    }
+
+    @media (max-width: 820px) {
+      .row-head { display: none; }
+
+      .ingredient-row {
+        grid-template-columns: 1fr 1fr;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .field-name,
+      .row-error { grid-column: 1 / -1; }
+
+      #scaled-table thead { display: none; }
+
+      #scaled-table,
+      #scaled-table tbody,
+      #scaled-table tr,
+      #scaled-table td {
+        display: block;
+        width: auto;
+      }
+
+      #scaled-table tr {
+        padding: 0.55rem 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      #scaled-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        border: 0;
+        padding: 0.18rem 0;
+        text-align: right;
+      }
+
+      #scaled-table td::before {
+        content: attr(data-label);
+        color: var(--muted);
+        font-family: var(--sans);
+        font-size: 0.75rem;
+        text-align: left;
+      }
+    }
+
+    @media (min-width: 980px) {
+      .layout { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); }
+      .wrap { padding-top: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <noscript><p class="noscript">This calculator needs JavaScript. Enable it and reload.</p></noscript>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+          <path fill="currentColor" d="M10 42c1-14 10-24 22-24s21 10 22 24c-6 4-14 6-22 6s-16-2-22-6z"/>
+          <path d="M22 40c6-8 16-8 22 0" fill="none" stroke="var(--paper)" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M32 28v12" fill="none" stroke="var(--paper)" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <div>
+          <p class="eyebrow">Dough room</p>
+          <h1>Bakery Batch Calculator</h1>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button type="button" id="theme-toggle" aria-pressed="false">Dark mode</button>
+        <button type="button" class="primary" id="copy-button">Copy as text</button>
+      </div>
+    </header>
+    <p class="lede">Scale the loaf you already know how to bake. Amounts follow the target yield. Baker’s percentages stay pegged to flour, and an optional cost per unit prices the whole batch and a single loaf.</p>
+    <p id="copy-status" role="status"></p>
+
+    <main class="layout">
+      <section class="panel formula" aria-labelledby="formula-heading">
+        <h2 id="formula-heading">Base formula</h2>
+        <p class="hint">Opens on one sourdough loaf: 500 g flour, 350 g water, 100 g levain, 10 g salt. These amounts belong to the base yield.</p>
+        <form id="calculator" autocomplete="off">
+          <p class="yield-line">
+            <label>This formula makes
+              <input id="base-yield" inputmode="decimal" aria-label="Base yield in loaves" value="1">
+            </label>
+            <span id="base-loaf-word">loaf.</span>
+            <label>I need
+              <input id="target-yield" inputmode="decimal" aria-label="Target yield in loaves" value="1">
+            </label>
+            <span id="target-loaf-word">loaf.</span>
+            <span class="scale-chip" id="scale-chip" data-scale="1">1×</span>
+          </p>
+
+          <div class="row-head" aria-hidden="true">
+            <span>Ingredient</span>
+            <span>Amount</span>
+            <span>Unit</span>
+            <span>Cost / unit ($)</span>
+            <span></span>
+          </div>
+          <div id="ingredient-rows"></div>
+          <div class="row-actions">
+            <button type="button" id="add-ingredient">Add ingredient</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="results-heading">
+        <h2 id="results-heading">Scaled batch</h2>
+        <p class="hint" id="scale-blurb">Same formula, new batch size.</p>
+        <p class="message" id="result-message" hidden></p>
+        <div class="stats">
+          <div class="stat">
+            <span class="label">Total batch weight</span>
+            <strong id="total-weight" data-grams="">—</strong>
+            <small id="total-weight-note"></small>
+          </div>
+          <div class="stat">
+            <span class="label">Baker’s total</span>
+            <strong id="bakers-total" data-percent="">—</strong>
+            <small id="bakers-note">Flour = 100%</small>
+          </div>
+          <div class="stat">
+            <span class="label">Total cost</span>
+            <strong id="total-cost" data-cost="">—</strong>
+            <small id="total-cost-note"></small>
+          </div>
+          <div class="stat">
+            <span class="label">Cost per loaf</span>
+            <strong id="per-loaf-cost" data-cost="">—</strong>
+            <small id="per-loaf-note"></small>
+          </div>
+        </div>
+        <table id="scaled-table">
+          <caption class="sr-only">Scaled amounts, baker’s percentages relative to flour, and line costs</caption>
+          <thead>
+            <tr>
+              <th scope="col">Ingredient</th>
+              <th scope="col" class="num">Scaled amount</th>
+              <th scope="col" class="num">Baker’s %</th>
+              <th scope="col" class="num">Line cost</th>
+            </tr>
+          </thead>
+          <tbody id="scaled-body"></tbody>
+        </table>
+        <ul class="notes" id="result-notes"></ul>
+        <p class="footnote">Percentages stay the same at any yield. Only the weights, and the price of the batch, change. Baker’s percent is that ingredient’s weight divided by total flour weight — flour inside a levain is not guessed at.</p>
+      </section>
+    </main>
+  </div>
+  <pre id="plain-text" hidden></pre>
+
+  <script>
+    (function () {
+      var GRAMS_PER_UNIT = {
+        mg: 0.001,
+        milligram: 0.001,
+        milligrams: 0.001,
+        g: 1,
+        gram: 1,
+        grams: 1,
+        gramme: 1,
+        grammes: 1,
+        kg: 1000,
+        kgs: 1000,
+        kilogram: 1000,
+        kilograms: 1000,
+        kilogramme: 1000,
+        kilogrammes: 1000,
+        oz: 28.349523125,
+        ounce: 28.349523125,
+        ounces: 28.349523125,
+        lb: 453.59237,
+        lbs: 453.59237,
+        pound: 453.59237,
+        pounds: 453.59237
+      };
+
+      var DASH = '\u2014';
+      var copyTimer = 0;
+
+      var state = {
+        baseYield: '1',
+        targetYield: '1',
+        rows: [
+          { name: 'Flour', amount: '500', unit: 'g', cost: '' },
+          { name: 'Water', amount: '350', unit: 'g', cost: '' },
+          { name: 'Levain', amount: '100', unit: 'g', cost: '' },
+          { name: 'Salt', amount: '10', unit: 'g', cost: '' }
+        ]
+      };
+
+      function el(tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text != null) node.textContent = text;
+        return node;
+      }
+
+      function unitKey(unit) {
+        return String(unit || '').trim().toLowerCase().replace(/\.$/, '');
+      }
+
+      function gramsPerUnit(unit) {
+        var key = unitKey(unit);
+        if (Object.prototype.hasOwnProperty.call(GRAMS_PER_UNIT, key)) {
+          return GRAMS_PER_UNIT[key];
+        }
+        return null;
+      }
+
+      function isFlourName(name) {
+        return /\bflour\b/i.test(String(name || '').trim());
+      }
+
+      function parseYield(raw) {
+        var text = String(raw == null ? '' : raw).trim();
+        if (!text) return { ok: false, reason: 'Enter a yield.' };
+        var value = Number(text);
+        if (!Number.isFinite(value)) return { ok: false, reason: 'Yield has to be a number.' };
+        if (value <= 0) return { ok: false, reason: 'Yield has to be greater than zero.' };
+        return { ok: true, value: value };
+      }
+
+      function parseAmount(raw) {
+        var text = String(raw == null ? '' : raw).trim();
+        if (!text) return { ok: false, reason: 'Enter an amount.' };
+        var value = Number(text);
+        if (!Number.isFinite(value)) return { ok: false, reason: 'Amount has to be a number.' };
+        if (value < 0) return { ok: false, reason: 'Amount can’t be negative.' };
+        return { ok: true, value: value };
+      }
+
+      function parseCost(raw) {
+        var text = String(raw == null ? '' : raw).trim();
+        if (!text) return { ok: true, value: null };
+        var value = Number(text);
+        if (!Number.isFinite(value)) return { ok: false, reason: 'Cost has to be a number.' };
+        if (value < 0) return { ok: false, reason: 'Cost can’t be negative.' };
+        return { ok: true, value: value };
+      }
+
+      function formatQuantity(n) {
+        if (!Number.isFinite(n)) return DASH;
+        var negative = n < 0;
+        var rounded = Math.round((Math.abs(n) + Number.EPSILON) * 100) / 100;
+        var parts = rounded.toFixed(2).split('.');
+        var intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        var frac = parts[1];
+        var body;
+        if (frac === '00') body = intPart;
+        else if (frac.charAt(1) === '0') body = intPart + '.' + frac.charAt(0);
+        else body = intPart + '.' + frac;
+        return negative ? '-' + body : body;
+      }
+
+      function formatMoney(n) {
+        var negative = n < 0;
+        var rounded = Math.round((Math.abs(n) + Number.EPSILON) * 100) / 100;
+        var parts = rounded.toFixed(2).split('.');
+        var grouped = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return (negative ? '-$' : '$') + grouped + '.' + parts[1];
+      }
+
+      function formatPercent(n) {
+        var rounded = Math.round(n * 10) / 10;
+        return rounded.toFixed(1).replace(/\.0$/, '') + '%';
+      }
+
+      function formatWeight(grams) {
+        var text = formatQuantity(grams) + ' g';
+        if (grams >= 1000) {
+          return text + ' (' + formatQuantity(grams / 1000) + ' kg)';
+        }
+        return text;
+      }
+
+      function loafWord(n) {
+        return Math.abs(n - 1) < 1e-9 ? 'loaf' : 'loaves';
+      }
+
+      function displayName(name) {
+        var trimmed = String(name || '').trim();
+        return trimmed || 'Untitled';
+      }
+
+      function dataNum(n) {
+        if (n == null || !Number.isFinite(n)) return '';
+        return String(Math.round(n * 1e6) / 1e6);
+      }
+
+      function compute() {
+        var base = parseYield(state.baseYield);
+        var target = parseYield(state.targetYield);
+        var yieldErrors = [];
+        if (!base.ok) yieldErrors.push('Base yield: ' + base.reason);
+        if (!target.ok) yieldErrors.push('Target yield: ' + target.reason);
+
+        var scale = base.ok && target.ok ? target.value / base.value : null;
+        var rows = state.rows.map(function (row) {
+          var amount = parseAmount(row.amount);
+          var cost = parseCost(row.cost);
+          var problems = [];
+          if (!amount.ok) problems.push(amount.reason);
+          if (!cost.ok) problems.push(cost.reason);
+          var scaled = amount.ok && scale != null ? amount.value * scale : null;
+          var factor = gramsPerUnit(row.unit);
+          var grams = scaled != null && factor != null ? scaled * factor : null;
+          return {
+            name: row.name,
+            unit: String(row.unit || '').trim(),
+            error: problems.join(' '),
+            scaled: scaled,
+            grams: grams,
+            percent: null,
+            lineCost: null,
+            costEntered: cost.ok && cost.value != null,
+            costPerUnit: cost.ok ? cost.value : null
+          };
+        });
+
+        var valid = rows.filter(function (row) { return !row.error && row.scaled != null; });
+        var flourRows = valid.filter(function (row) { return isFlourName(row.name); });
+        var flourWeighted = flourRows.filter(function (row) { return row.grams != null; });
+        var flourGrams = flourWeighted.reduce(function (sum, row) { return sum + row.grams; }, 0);
+        var flourMessage = '';
+        if (flourRows.length === 0) {
+          flourMessage = 'Baker’s percentages need an ingredient with “flour” in the name.';
+        } else if (flourWeighted.length === 0) {
+          flourMessage = 'Put flour in a weight unit (g, kg, oz, or lb) to calculate baker’s percentages.';
+        } else if (flourGrams === 0) {
+          flourMessage = 'Flour weight is zero, so baker’s percentages are omitted.';
+        } else {
+          valid.forEach(function (row) {
+            if (row.grams != null) row.percent = (row.grams / flourGrams) * 100;
+          });
+        }
+
+        var weightRows = valid.filter(function (row) { return row.grams != null; });
+        var totalGrams = weightRows.reduce(function (sum, row) { return sum + row.grams; }, 0);
+        var skippedWeight = valid.filter(function (row) { return row.grams == null; });
+
+        var anyCost = false;
+        var costSum = 0;
+        var missingCost = [];
+        valid.forEach(function (row) {
+          if (!row.costEntered) {
+            missingCost.push(displayName(row.name));
+            return;
+          }
+          anyCost = true;
+          row.lineCost = row.scaled * row.costPerUnit;
+          costSum += row.lineCost;
+        });
+
+        var formulaPercent = null;
+        if (valid.some(function (row) { return row.percent != null; })) {
+          formulaPercent = valid.reduce(function (sum, row) {
+            return sum + (row.percent || 0);
+          }, 0);
+        }
+
+        var notes = [];
+        if (flourMessage) notes.push(flourMessage);
+        if (skippedWeight.length) {
+          var skippedLabel = skippedWeight.map(function (row) {
+            return displayName(row.name) + ' (unit “' + (row.unit || 'blank') + '”)';
+          }).join(', ');
+          notes.push('Left out of the total weight: ' + skippedLabel + '.');
+        }
+        if (!anyCost) {
+          notes.push('No costs entered. Add a cost per unit to price the batch.');
+        } else if (missingCost.length) {
+          notes.push('No cost entered for: ' + missingCost.join(', ') + '.');
+        }
+
+        return {
+          yieldsOk: yieldErrors.length === 0,
+          yieldErrors: yieldErrors,
+          base: base.ok ? base.value : null,
+          target: target.ok ? target.value : null,
+          scale: scale,
+          rows: rows,
+          totalGrams: weightRows.length ? totalGrams : null,
+          totalCost: anyCost ? costSum : null,
+          perLoafCost: anyCost && target.ok ? costSum / target.value : null,
+          formulaPercent: formulaPercent,
+          flourGrams: flourWeighted.length && flourGrams > 0 ? flourGrams : null,
+          notes: notes
+        };
+      }
+
+      function buildPlainText(model) {
+        var lines = ['Bakery Batch Calculator', ''];
+        if (!model.yieldsOk) {
+          lines.push('This batch can’t be scaled yet.');
+          model.yieldErrors.forEach(function (error) { lines.push('- ' + error); });
+          return lines.join('\n');
+        }
+        lines.push('Base yield: ' + formatQuantity(model.base) + ' ' + loafWord(model.base));
+        lines.push('Target yield: ' + formatQuantity(model.target) + ' ' + loafWord(model.target));
+        lines.push('Scale: ' + formatQuantity(model.scale) + '\u00d7');
+        lines.push('', 'Scaled recipe');
+        model.rows.forEach(function (row) {
+          var name = displayName(row.name);
+          if (row.error || row.scaled == null) {
+            lines.push('- ' + name + ': skipped (' + (row.error || 'not scaled') + ')');
+            return;
+          }
+          var amount = formatQuantity(row.scaled) + (row.unit ? ' ' + row.unit : '');
+          var percent = row.percent == null ? 'n/a' : formatPercent(row.percent);
+          var cost = row.lineCost == null ? 'no cost' : formatMoney(row.lineCost);
+          lines.push('- ' + name + ': ' + amount + ' \u00b7 ' + percent + ' \u00b7 ' + cost);
+        });
+        lines.push('');
+        lines.push('Total batch weight: ' + (model.totalGrams == null ? 'n/a' : formatWeight(model.totalGrams)));
+        lines.push('Total cost: ' + (model.totalCost == null ? 'not entered' : formatMoney(model.totalCost)));
+        lines.push('Cost per loaf: ' + (model.perLoafCost == null ? 'not entered' : formatMoney(model.perLoafCost)));
+        if (model.notes.length) {
+          lines.push('');
+          model.notes.forEach(function (note) { lines.push(note); });
+        }
+        return lines.join('\n');
+      }
+
+      function renderRows() {
+        var container = document.getElementById('ingredient-rows');
+        var fragment = document.createDocumentFragment();
+        state.rows.forEach(function (row, index) {
+          var rowEl = el('div', 'ingredient-row');
+          rowEl.dataset.index = String(index);
+
+          function field(className, label, fieldName, value, mode) {
+            var wrap = el('label', 'field ' + className);
+            wrap.appendChild(el('span', 'field-label', label));
+            var input = document.createElement('input');
+            input.dataset.field = fieldName;
+            input.value = value;
+            input.autocomplete = 'off';
+            input.spellcheck = false;
+            if (mode) input.inputMode = mode;
+            input.setAttribute('aria-label', label);
+            wrap.appendChild(input);
+            return wrap;
+          }
+
+          rowEl.appendChild(field('field-name', 'Ingredient', 'name', row.name, null));
+          rowEl.appendChild(field('field-amount', 'Amount', 'amount', row.amount, 'decimal'));
+          rowEl.appendChild(field('field-unit', 'Unit', 'unit', row.unit, null));
+          rowEl.appendChild(field('field-cost', 'Cost per unit ($)', 'cost', row.cost, 'decimal'));
+
+          var remove = el('button', 'remove-row', 'Remove');
+          remove.type = 'button';
+          remove.dataset.action = 'remove';
+          remove.setAttribute('aria-label', 'Remove ' + (row.name.trim() || 'ingredient'));
+          rowEl.appendChild(remove);
+          fragment.appendChild(rowEl);
+        });
+        container.replaceChildren(fragment);
+      }
+
+      function setMessage(text) {
+        var node = document.getElementById('result-message');
+        if (!text) {
+          node.hidden = true;
+          node.textContent = '';
+          return;
+        }
+        node.hidden = false;
+        if (node.textContent !== text) node.textContent = text;
+      }
+
+      function paintStat(id, text, dataAttr, dataValue) {
+        var node = document.getElementById(id);
+        node.textContent = text;
+        if (dataAttr) node.setAttribute(dataAttr, dataValue);
+      }
+
+      function renderResults() {
+        var model = compute();
+        var baseInput = document.getElementById('base-yield');
+        var targetInput = document.getElementById('target-yield');
+        baseInput.setAttribute('aria-invalid', model.yieldErrors.some(function (e) { return e.indexOf('Base') === 0; }) ? 'true' : 'false');
+        targetInput.setAttribute('aria-invalid', model.yieldErrors.some(function (e) { return e.indexOf('Target') === 0; }) ? 'true' : 'false');
+
+        document.getElementById('base-loaf-word').textContent = (model.base == null ? 'loaves' : loafWord(model.base)) + '.';
+        document.getElementById('target-loaf-word').textContent = (model.target == null ? 'loaves' : loafWord(model.target)) + '.';
+
+        var chip = document.getElementById('scale-chip');
+        if (model.scale == null) {
+          chip.textContent = DASH;
+          chip.dataset.scale = '';
+        } else {
+          chip.textContent = formatQuantity(model.scale) + '\u00d7';
+          chip.dataset.scale = dataNum(model.scale);
+        }
+
+        var blurb = document.getElementById('scale-blurb');
+        if (model.yieldsOk) {
+          blurb.textContent = formatQuantity(model.target) + ' ' + loafWord(model.target) + ' from a formula written for ' + formatQuantity(model.base) + ' ' + loafWord(model.base) + '.';
+        } else {
+          blurb.textContent = 'Fix the yield before scaling.';
+        }
+
+        setMessage(model.yieldsOk ? '' : model.yieldErrors.join(' '));
+        document.getElementById('copy-button').disabled = !model.yieldsOk;
+
+        var rowEls = document.querySelectorAll('#ingredient-rows .ingredient-row');
+        model.rows.forEach(function (row, index) {
+          var rowEl = rowEls[index];
+          if (!rowEl) return;
+          var existing = rowEl.querySelector('.row-error');
+          if (!row.error) {
+            if (existing) existing.remove();
+            return;
+          }
+          if (!existing) {
+            existing = el('p', 'row-error');
+            rowEl.appendChild(existing);
+          }
+          existing.textContent = row.error;
+        });
+
+        var body = document.getElementById('scaled-body');
+        body.replaceChildren();
+        if (model.yieldsOk) {
+          model.rows.forEach(function (row) {
+            if (row.error || row.scaled == null) return;
+            var tr = document.createElement('tr');
+            tr.dataset.name = displayName(row.name);
+            tr.dataset.amount = dataNum(row.scaled);
+            tr.dataset.unit = row.unit;
+            tr.dataset.percent = dataNum(row.percent);
+            tr.dataset.grams = dataNum(row.grams);
+            tr.dataset.cost = dataNum(row.lineCost);
+
+            var nameCell = el('td', null, displayName(row.name));
+            nameCell.dataset.label = 'Ingredient';
+
+            var amountCell = el('td', 'num', formatQuantity(row.scaled) + (row.unit ? ' ' + row.unit : ''));
+            amountCell.dataset.label = 'Scaled amount';
+
+            var percentCell = el('td', 'num');
+            percentCell.dataset.label = 'Baker’s %';
+            if (row.percent == null) {
+              percentCell.textContent = DASH;
+            } else {
+              var wrap = el('span', 'pct-wrap');
+              wrap.appendChild(el('span', null, formatPercent(row.percent)));
+              var bar = el('span', 'bar');
+              var fill = document.createElement('span');
+              var width = Math.max(0, Math.min(100, row.percent));
+              fill.style.width = width + '%';
+              bar.appendChild(fill);
+              wrap.appendChild(bar);
+              percentCell.appendChild(wrap);
+            }
+
+            var costCell = el('td', 'num', row.lineCost == null ? DASH : formatMoney(row.lineCost));
+            costCell.dataset.label = 'Line cost';
+            tr.append(nameCell, amountCell, percentCell, costCell);
+            body.appendChild(tr);
+          });
+        }
+
+        if (model.yieldsOk && model.totalGrams != null) {
+          paintStat('total-weight', formatWeight(model.totalGrams), 'data-grams', dataNum(model.totalGrams));
+          document.getElementById('total-weight-note').textContent = model.totalGrams >= 1000 ? 'Grams, with kilograms alongside' : 'Sum of weight units';
+        } else {
+          paintStat('total-weight', DASH, 'data-grams', '');
+          document.getElementById('total-weight-note').textContent = model.yieldsOk ? 'No weight units yet' : '';
+        }
+
+        if (model.yieldsOk && model.formulaPercent != null) {
+          paintStat('bakers-total', formatPercent(model.formulaPercent), 'data-percent', dataNum(model.formulaPercent));
+          document.getElementById('bakers-note').textContent = 'Flour = 100%';
+        } else {
+          paintStat('bakers-total', DASH, 'data-percent', '');
+          document.getElementById('bakers-note').textContent = model.yieldsOk ? 'Needs flour' : '';
+        }
+
+        if (model.yieldsOk && model.totalCost != null) {
+          paintStat('total-cost', formatMoney(model.totalCost), 'data-cost', dataNum(model.totalCost));
+          document.getElementById('total-cost-note').textContent = 'Sum of priced rows';
+        } else {
+          paintStat('total-cost', DASH, 'data-cost', '');
+          document.getElementById('total-cost-note').textContent = model.yieldsOk ? 'No costs yet' : '';
+        }
+
+        if (model.yieldsOk && model.perLoafCost != null) {
+          paintStat('per-loaf-cost', formatMoney(model.perLoafCost), 'data-cost', dataNum(model.perLoafCost));
+          document.getElementById('per-loaf-note').textContent = formatQuantity(model.target) + ' ' + loafWord(model.target);
+        } else {
+          paintStat('per-loaf-cost', DASH, 'data-cost', '');
+          document.getElementById('per-loaf-note').textContent = '';
+        }
+
+        var notes = document.getElementById('result-notes');
+        notes.replaceChildren();
+        var visibleNotes = model.yieldsOk ? model.notes : [];
+        visibleNotes.forEach(function (note) {
+          notes.appendChild(el('li', null, note));
+        });
+
+        document.getElementById('plain-text').textContent = buildPlainText(model);
+      }
+
+      function flashCopyStatus(message) {
+        var status = document.getElementById('copy-status');
+        status.textContent = message;
+        window.clearTimeout(copyTimer);
+        copyTimer = window.setTimeout(function () {
+          status.textContent = '';
+        }, 2400);
+      }
+
+      function copyWithSelection(text) {
+        var area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.top = '0';
+        area.style.left = '0';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.focus();
+        area.select();
+        var ok = false;
+        try {
+          ok = document.execCommand('copy');
+        } catch (err) {
+          ok = false;
+        }
+        area.remove();
+        return ok;
+      }
+
+      function copyPlainText() {
+        var text = document.getElementById('plain-text').textContent;
+        if (!text || document.getElementById('copy-button').disabled) return;
+
+        // The selection copy has to run inside the click. Waiting for
+        // clipboard.writeText to reject spends the user gesture, and the
+        // fallback then fails as well.
+        var legacyOk = copyWithSelection(text);
+
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(function () {
+            flashCopyStatus('Copied.');
+          }).catch(function () {
+            flashCopyStatus(legacyOk ? 'Copied.' : 'Select the recipe text from the page and copy it manually.');
+          });
+          return;
+        }
+        flashCopyStatus(legacyOk ? 'Copied.' : 'Select the recipe text from the page and copy it manually.');
+      }
+
+      function syncThemeButton() {
+        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+        var button = document.getElementById('theme-toggle');
+        button.textContent = dark ? 'Light mode' : 'Dark mode';
+        button.setAttribute('aria-pressed', dark ? 'true' : 'false');
+      }
+
+      function toggleTheme() {
+        var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        try {
+          localStorage.setItem('bakery-theme', next);
+        } catch (err) {
+          /* Storage can be blocked; the toggle still applies for this view. */
+        }
+        syncThemeButton();
+      }
+
+      document.getElementById('calculator').addEventListener('submit', function (event) {
+        event.preventDefault();
+      });
+
+      document.getElementById('base-yield').addEventListener('input', function (event) {
+        state.baseYield = event.target.value;
+        renderResults();
+      });
+
+      document.getElementById('target-yield').addEventListener('input', function (event) {
+        state.targetYield = event.target.value;
+        renderResults();
+      });
+
+      document.getElementById('ingredient-rows').addEventListener('input', function (event) {
+        var input = event.target.closest('[data-field]');
+        if (!input) return;
+        var rowEl = input.closest('.ingredient-row');
+        var index = Number(rowEl.dataset.index);
+        if (!state.rows[index]) return;
+        state.rows[index][input.dataset.field] = input.value;
+        if (input.dataset.field === 'name') {
+          var remove = rowEl.querySelector('.remove-row');
+          remove.setAttribute('aria-label', 'Remove ' + (input.value.trim() || 'ingredient'));
+        }
+        renderResults();
+      });
+
+      document.getElementById('ingredient-rows').addEventListener('click', function (event) {
+        var button = event.target.closest('[data-action="remove"]');
+        if (!button) return;
+        var rowEl = button.closest('.ingredient-row');
+        var index = Number(rowEl.dataset.index);
+        state.rows.splice(index, 1);
+        renderRows();
+        renderResults();
+        document.getElementById('add-ingredient').focus();
+      });
+
+      document.getElementById('add-ingredient').addEventListener('click', function () {
+        state.rows.push({ name: '', amount: '', unit: 'g', cost: '' });
+        renderRows();
+        renderResults();
+        var names = document.querySelectorAll('#ingredient-rows [data-field="name"]');
+        if (names.length) names[names.length - 1].focus();
+      });
+
+      document.getElementById('copy-button').addEventListener('click', copyPlainText);
+      document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+      renderRows();
+      syncThemeButton();
+      renderResults();
+    })();
+  </script>
+</body>
+</html>
